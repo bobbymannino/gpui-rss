@@ -10,9 +10,16 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
-[dependencies]
+[workspace]
+members = ["crates/app"]
 
-[lints.clippy]
+[dependencies]
+app = { path = "crates/app" }
+
+[lints]
+workspace = true
+
+[workspace.lints.clippy]
 pedantic = { level = "deny", priority = -1 }
 nursery = { level = "deny", priority = -1 }
 unwrap_used = "deny"
