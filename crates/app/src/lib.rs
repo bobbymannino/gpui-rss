@@ -1,3 +1,4 @@
+mod sidebar;
 mod workspace;
 
 use gpui_kit::QuitMode;
@@ -20,7 +21,7 @@ pub fn run() {
         let open = cx.spawn(async move |cx| {
             cx.open_window(WindowOptions::default(), |window, cx| {
                 window.activate_window();
-                let view = cx.new(|_| Workspace);
+                let view = cx.new(Workspace::new);
                 cx.new(|cx| Root::new(view, window, cx))
             })?;
 
