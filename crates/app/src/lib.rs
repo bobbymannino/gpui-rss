@@ -27,14 +27,17 @@ impl Render for HelloWorld {
     }
 }
 
+/// Run the application. This is the root most function that sets up the app and runs it.
 pub fn run() {
     let app = gpui_kit::application().with_assets(gpui_kit::assets::Assets);
 
     app.run(move |cx| {
         gpui_kit::init(cx);
+        cx.activate(true);
 
         let open = cx.spawn(async move |cx| {
             cx.open_window(WindowOptions::default(), |window, cx| {
+                window.activate_window();
                 let view = cx.new(|_| HelloWorld);
                 cx.new(|cx| Root::new(view, window, cx))
             })?;
