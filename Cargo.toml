@@ -11,7 +11,7 @@ panic = "abort"
 strip = true
 
 [workspace]
-members = ["crates/app"]
+members = ["crates/app", "crates/storage"]
 
 [dependencies]
 app = { path = "crates/app" }
