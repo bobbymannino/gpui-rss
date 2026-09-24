@@ -1,3 +1,4 @@
+use gpui_kit::QuitMode;
 use gpui_kit::Window;
 use gpui_kit::WindowOptions;
 use gpui_kit::base::StyledExt as _;
@@ -29,7 +30,9 @@ impl Render for HelloWorld {
 
 /// Run the application. This is the root most function that sets up the app and runs it.
 pub fn run() {
-    let app = gpui_kit::application().with_assets(gpui_kit::assets::Assets);
+    let app = gpui_kit::application()
+        .with_assets(gpui_kit::assets::Assets)
+        .with_quit_mode(QuitMode::LastWindowClosed);
 
     app.run(move |cx| {
         gpui_kit::init(cx);
