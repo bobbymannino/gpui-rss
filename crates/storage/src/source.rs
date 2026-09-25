@@ -2,9 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// An RSS feed the user has subscribed to.
-///
-/// A source is identified by its [`url`](Self::url), which is unique within a
-/// [`Database`](crate::Database).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Source {
     /// Human readable name shown in the UI.
