@@ -1,3 +1,4 @@
+use crate::all_sources::AllSources;
 use crate::new_source::NewSource;
 use crate::page::Page;
 use crate::sidebar::Sidebar;
@@ -16,12 +17,14 @@ pub struct Workspace {
     page: Page,
     /// The user's sources, shared by every page that needs them.
     storage: Entity<JSONDatabase>,
+    all_sources: Entity<AllSources>,
     new_source: Entity<NewSource>,
 }
 
 impl Workspace {
     pub fn new(storage: Entity<JSONDatabase>, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let sidebar = cx.new(|_| Sidebar::new());
+        let all_sources = cx.new(|cx| AllSources::new(storage.clone(), cx));
         let new_source = cx.new(|cx| NewSource::new(storage.clone(), window, cx));
 
         cx.subscribe(&sidebar, |this, _, page: &Page, cx| {
@@ -34,6 +37,7 @@ impl Workspace {
             sidebar,
             page: Page::default(),
             storage,
+            all_sources,
             new_source,
         }
     }
@@ -42,7 +46,7 @@ impl Workspace {
     fn render_page(&self) -> AnyElement {
         match self.page {
             Page::AllFeeds => empty_page("page-all-feeds"),
-            Page::AllSources => empty_page("page-all-sources"),
+            Page::AllSources => self.all_sources.clone().into_any_element(),
             Page::NewSource => self.new_source.clone().into_any_element(),
         }
     }

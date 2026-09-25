@@ -26,4 +26,28 @@ impl Source {
             updated_at: now,
         }
     }
+
+    /// Human readable name shown in the UI.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// The location the feed is fetched from.
+    #[must_use]
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
+    /// When the source was created.
+    #[must_use]
+    pub const fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    /// When the source was last updated.
+    #[must_use]
+    pub const fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
 }
