@@ -54,7 +54,7 @@ impl NewSource {
         let name = self.name.read(cx).value().trim().to_owned();
         let url = self.url.read(cx).value().trim().to_owned();
 
-        let result = validate(&name, &url).and_then(|()| {
+        let result = validate(&name, &url, self.storage.read(cx).sources()).and_then(|()| {
             self.storage
                 .update(cx, |db, cx| {
                     db.sources_mut().push(Source::new(name, url));
@@ -83,8 +83,8 @@ impl NewSource {
     }
 }
 
-/// Check the form's values, returning a message for the user if they are unusable.
-fn validate(name: &str, url: &str) -> Result<(), SharedString> {
+/// Check the form's values against the `existing` sources, returning a message for the user if they are unusable.
+fn validate(name: &str, url: &str, existing: &[Source]) -> Result<(), SharedString> {
     if name.is_empty() {
         return Err("Give the source a name.".into());
     }
@@ -93,7 +93,16 @@ fn validate(name: &str, url: &str) -> Result<(), SharedString> {
         return Err("The URL must start with http:// or https://.".into());
     }
 
+    if let Some(duplicate) = existing.iter().find(|source| same_url(source.url(), url)) {
+        return Err(format!("“{}” already uses this URL.", duplicate.name()).into());
+    }
+
     Ok(())
+}
+
+/// Whether two feed URLs point at the same place, ignoring a trailing slash.
+fn same_url(a: &str, b: &str) -> bool {
+    a.trim_end_matches('/') == b.trim_end_matches('/')
 }
 
 impl Render for NewSource {
@@ -124,5 +133,33 @@ impl Render for NewSource {
                     ),
                 ),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const URL: &str = "https://example.com/feed.xml";
+
+    #[test]
+    fn accepts_a_new_url() {
+        let existing = [Source::new("Other", "https://other.com/feed.xml")];
+
+        assert!(validate("Example", URL, &existing).is_ok());
+    }
+
+    #[test]
+    fn rejects_an_existing_url() {
+        let existing = [Source::new("Example", URL)];
+
+        assert!(validate("Again", URL, &existing).is_err());
+    }
+
+    #[test]
+    fn trailing_slash_is_the_same_url() {
+        let existing = [Source::new("Example", "https://example.com/")];
+
+        assert!(validate("Again", "https://example.com", &existing).is_err());
     }
 }
