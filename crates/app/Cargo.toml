@@ -7,6 +7,7 @@ edition = "2024"
 gpui-kit = "0.6"
 anyhow = "1.0"
 dirs = "6"
+feed = { path = "../feed" }
 storage = { path = "../storage" }
 
 [lints]

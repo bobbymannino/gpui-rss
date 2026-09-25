@@ -1,3 +1,4 @@
+mod all_feeds;
 mod all_sources;
 mod new_source;
 mod page;

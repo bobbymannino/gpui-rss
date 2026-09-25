@@ -1,3 +1,4 @@
+use crate::all_feeds::AllFeeds;
 use crate::all_sources::AllSources;
 use crate::new_source::NewSource;
 use crate::page::Page;
@@ -17,6 +18,7 @@ pub struct Workspace {
     page: Page,
     /// The user's sources, shared by every page that needs them.
     storage: Entity<JSONDatabase>,
+    all_feeds: Entity<AllFeeds>,
     all_sources: Entity<AllSources>,
     new_source: Entity<NewSource>,
 }
@@ -24,6 +26,7 @@ pub struct Workspace {
 impl Workspace {
     pub fn new(storage: Entity<JSONDatabase>, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let sidebar = cx.new(|_| Sidebar::new());
+        let all_feeds = cx.new(|cx| AllFeeds::new(storage.clone(), cx));
         let all_sources = cx.new(|cx| AllSources::new(storage.clone(), cx));
         let new_source = cx.new(|cx| NewSource::new(storage.clone(), window, cx));
 
@@ -37,6 +40,7 @@ impl Workspace {
             sidebar,
             page: Page::default(),
             storage,
+            all_feeds,
             all_sources,
             new_source,
         }
@@ -45,16 +49,11 @@ impl Workspace {
     /// The content area for the current page.
     fn render_page(&self) -> AnyElement {
         match self.page {
-            Page::AllFeeds => empty_page("page-all-feeds"),
+            Page::AllFeeds => self.all_feeds.clone().into_any_element(),
             Page::AllSources => self.all_sources.clone().into_any_element(),
             Page::NewSource => self.new_source.clone().into_any_element(),
         }
     }
-}
-
-/// A placeholder for a page that has no content yet.
-fn empty_page(id: &'static str) -> AnyElement {
-    div().id(id).v_flex().flex_1().size_full().into_any_element()
 }
 
 impl Render for Workspace {
