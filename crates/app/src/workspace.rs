@@ -1,5 +1,7 @@
+use crate::new_source::NewSource;
 use crate::page::Page;
 use crate::sidebar::Sidebar;
+use gpui_kit::AnyElement;
 use gpui_kit::Entity;
 use gpui_kit::Window;
 use gpui_kit::base::StyledExt as _;
@@ -12,12 +14,15 @@ use storage::JSONDatabase;
 pub struct Workspace {
     sidebar: Entity<Sidebar>,
     page: Page,
+    /// The user's sources, shared by every page that needs them.
     storage: Entity<JSONDatabase>,
+    new_source: Entity<NewSource>,
 }
 
 impl Workspace {
-    pub fn new(storage: Entity<JSONDatabase>, cx: &mut Context<Self>) -> Self {
+    pub fn new(storage: Entity<JSONDatabase>, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let sidebar = cx.new(|_| Sidebar::new());
+        let new_source = cx.new(|cx| NewSource::new(storage.clone(), window, cx));
 
         cx.subscribe(&sidebar, |this, _, page: &Page, cx| {
             this.page = *page;
@@ -29,8 +34,23 @@ impl Workspace {
             sidebar,
             page: Page::default(),
             storage,
+            new_source,
         }
     }
+
+    /// The content area for the current page.
+    fn render_page(&self) -> AnyElement {
+        match self.page {
+            Page::AllFeeds => empty_page("page-all-feeds"),
+            Page::AllSources => empty_page("page-all-sources"),
+            Page::NewSource => self.new_source.clone().into_any_element(),
+        }
+    }
+}
+
+/// A placeholder for a page that has no content yet.
+fn empty_page(id: &'static str) -> AnyElement {
+    div().id(id).v_flex().flex_1().size_full().into_any_element()
 }
 
 impl Render for Workspace {
@@ -39,6 +59,6 @@ impl Render for Workspace {
             .h_flex()
             .size_full()
             .child(self.sidebar.clone())
-            .child(self.page.render())
+            .child(self.render_page())
     }
 }

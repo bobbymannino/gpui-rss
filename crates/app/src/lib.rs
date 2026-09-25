@@ -1,3 +1,4 @@
+mod new_source;
 mod page;
 mod sidebar;
 mod workspace;
@@ -84,7 +85,7 @@ pub fn run() {
             cx.open_window(options, |window, cx| {
                 window.activate_window();
                 let storage = cx.new(|_| database);
-                let view = cx.new(|cx| Workspace::new(storage, cx));
+                let view = cx.new(|cx| Workspace::new(storage, window, cx));
                 cx.new(|cx| Root::new(view, window, cx))
             })?;
 
