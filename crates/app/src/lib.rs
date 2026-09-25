@@ -3,6 +3,7 @@ mod sidebar;
 mod workspace;
 
 use crate::workspace::Workspace;
+use anyhow::Context as _;
 use gpui_kit::App;
 use gpui_kit::Bounds;
 use gpui_kit::Pixels;
@@ -14,6 +15,8 @@ use gpui_kit::component::Root;
 use gpui_kit::prelude::*;
 use gpui_kit::px;
 use gpui_kit::size;
+use std::path::PathBuf;
+use storage::JSONDatabase;
 
 /// Width to height ratio of the initial window.
 const OPENING_WINDOW_ASPECT_RATIO: f32 = 1.4;
@@ -27,6 +30,17 @@ const OPENING_WINDOW_MAX_WIDTH: f32 = 1400.0;
 const WINDOW_MIN_WIDTH: f32 = 320.0;
 /// The minimum height of the window.
 const WINDOW_MIN_HEIGHT: f32 = 320.0;
+/// The folder inside the platform's data directory the app keeps its files in.
+const DATA_DIR_NAME: &str = "gpui-rss";
+/// The name of the file sources are saved to.
+const DATABASE_FILE_NAME: &str = "db.json";
+
+/// Where the database lives, e.g. `~/Library/Application Support/gpui-rss/db.json` on macOS.
+fn database_path() -> anyhow::Result<PathBuf> {
+    let data_dir = dirs::data_dir().context("could not find the platform data directory")?;
+
+    Ok(data_dir.join(DATA_DIR_NAME).join(DATABASE_FILE_NAME))
+}
 
 /// The bounds the first window opens at: a [`WINDOW_ASPECT_RATIO`] rectangle
 /// scaled to the primary display, clamped to a min/max width, and centered.
@@ -65,9 +79,12 @@ pub fn run() {
         };
 
         let open = cx.spawn(async move |cx| {
+            let database = JSONDatabase::new(database_path()?)?;
+
             cx.open_window(options, |window, cx| {
                 window.activate_window();
-                let view = cx.new(Workspace::new);
+                let storage = cx.new(|_| database);
+                let view = cx.new(|cx| Workspace::new(storage, cx));
                 cx.new(|cx| Root::new(view, window, cx))
             })?;
 

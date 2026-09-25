@@ -5,16 +5,18 @@ use gpui_kit::Window;
 use gpui_kit::base::StyledExt as _;
 use gpui_kit::div;
 use gpui_kit::prelude::*;
+use storage::JSONDatabase;
 
 /// The top level view hosted by the window's `Root`. Everything the user sees
 /// lives inside this.
 pub struct Workspace {
     sidebar: Entity<Sidebar>,
     page: Page,
+    storage: Entity<JSONDatabase>,
 }
 
 impl Workspace {
-    pub fn new(cx: &mut Context<Self>) -> Self {
+    pub fn new(storage: Entity<JSONDatabase>, cx: &mut Context<Self>) -> Self {
         let sidebar = cx.new(|_| Sidebar::new());
 
         cx.subscribe(&sidebar, |this, _, page: &Page, cx| {
@@ -26,6 +28,7 @@ impl Workspace {
         Self {
             sidebar,
             page: Page::default(),
+            storage,
         }
     }
 }
