@@ -1,4 +1,5 @@
 use anyhow::Context as _;
+use gpui_kit::ClipboardItem;
 use gpui_kit::Entity;
 use gpui_kit::PromptLevel;
 use gpui_kit::Window;
@@ -7,6 +8,8 @@ use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::IconName;
 use gpui_kit::component::button::Button;
 use gpui_kit::component::button::ButtonVariants as _;
+use gpui_kit::component::menu::ContextMenuExt as _;
+use gpui_kit::component::menu::PopupMenuItem;
 use gpui_kit::div;
 use gpui_kit::prelude::*;
 use storage::JSONDatabase;
@@ -69,11 +72,16 @@ impl AllSources {
     }
 
     /// One source as a row: its name with the feed URL beneath, and a delete button.
+    /// Right clicking the row opens a menu to copy its details or delete it.
     fn source_row(index: usize, source: &Source, cx: &Context<Self>) -> impl IntoElement {
         let delete = {
             let source = source.clone();
             cx.listener(move |_, _, window, cx| Self::confirm_delete(source.clone(), window, cx))
         };
+        let this = cx.weak_entity();
+        let name = source.name().to_owned();
+        let url = source.url().to_owned();
+        let menu_source = source.clone();
 
         div()
             .id(("source", index))
@@ -102,6 +110,26 @@ impl AllSources {
                     .tooltip("Delete source")
                     .on_click(delete),
             )
+            .context_menu(move |menu, _, _| {
+                let name = name.clone();
+                let url = url.clone();
+                let this = this.clone();
+                let source = menu_source.clone();
+
+                menu.item(
+                    PopupMenuItem::new("Copy Title")
+                        .on_click(move |_, _, cx| cx.write_to_clipboard(ClipboardItem::new_string(name.clone()))),
+                )
+                .item(
+                    PopupMenuItem::new("Copy URL")
+                        .on_click(move |_, _, cx| cx.write_to_clipboard(ClipboardItem::new_string(url.clone()))),
+                )
+                .separator()
+                .item(PopupMenuItem::new("Delete Source").on_click(move |_, window, cx| {
+                    this.update(cx, |_, cx| Self::confirm_delete(source.clone(), window, cx))
+                        .ok();
+                }))
+            })
     }
 }
 
