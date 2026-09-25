@@ -1,3 +1,4 @@
+use crate::page::Page;
 use crate::sidebar::Sidebar;
 use gpui_kit::Entity;
 use gpui_kit::Window;
@@ -9,12 +10,22 @@ use gpui_kit::prelude::*;
 /// lives inside this.
 pub struct Workspace {
     sidebar: Entity<Sidebar>,
+    page: Page,
 }
 
 impl Workspace {
     pub fn new(cx: &mut Context<Self>) -> Self {
+        let sidebar = cx.new(|_| Sidebar::new());
+
+        cx.subscribe(&sidebar, |this, _, page: &Page, cx| {
+            this.page = *page;
+            cx.notify();
+        })
+        .detach();
+
         Self {
-            sidebar: cx.new(|_| Sidebar::new()),
+            sidebar,
+            page: Page::default(),
         }
     }
 }
@@ -25,6 +36,6 @@ impl Render for Workspace {
             .h_flex()
             .size_full()
             .child(self.sidebar.clone())
-            .child(div().v_flex().flex_1())
+            .child(self.page.render())
     }
 }

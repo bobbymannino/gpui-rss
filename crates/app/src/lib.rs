@@ -1,3 +1,4 @@
+mod page;
 mod sidebar;
 mod workspace;
 
