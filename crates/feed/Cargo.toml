@@ -1,0 +1,13 @@
+[package]
+name = "feed"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+feed-rs = "2.4"
+ureq = "3.4"
+
+[lints]
+workspace = true
