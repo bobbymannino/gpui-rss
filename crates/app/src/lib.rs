@@ -5,6 +5,7 @@ use gpui_kit::App;
 use gpui_kit::Bounds;
 use gpui_kit::Pixels;
 use gpui_kit::QuitMode;
+use gpui_kit::Size;
 use gpui_kit::WindowBounds;
 use gpui_kit::WindowOptions;
 use gpui_kit::component::Root;
@@ -22,6 +23,10 @@ const OPENING_WINDOW_DISPLAY_FRACTION: f32 = 0.65;
 const OPENING_WINDOW_MIN_WIDTH: f32 = 900.0;
 /// The widest the initial window may open at.
 const OPENING_WINDOW_MAX_WIDTH: f32 = 1400.0;
+/// The minimum width of the window.
+const WINDOW_MIN_WIDTH: f32 = 320.0;
+/// The minimum height of the window.
+const WINDOW_MIN_HEIGHT: f32 = 320.0;
 
 /// The bounds the first window opens at: a [`WINDOW_ASPECT_RATIO`] rectangle
 /// scaled to the primary display, clamped to a min/max width, and centered.
@@ -52,6 +57,10 @@ pub fn run() {
 
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(initial_window_bounds(cx))),
+            window_min_size: Some(Size::new(
+                Pixels::from(WINDOW_MIN_WIDTH),
+                Pixels::from(WINDOW_MIN_HEIGHT),
+            )),
             ..WindowOptions::default()
         };
 
