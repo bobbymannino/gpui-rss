@@ -1,6 +1,7 @@
 mod sidebar;
 mod workspace;
 
+use crate::workspace::Workspace;
 use gpui_kit::App;
 use gpui_kit::Bounds;
 use gpui_kit::Pixels;
@@ -12,8 +13,6 @@ use gpui_kit::component::Root;
 use gpui_kit::prelude::*;
 use gpui_kit::px;
 use gpui_kit::size;
-
-use crate::workspace::Workspace;
 
 /// Width to height ratio of the initial window.
 const OPENING_WINDOW_ASPECT_RATIO: f32 = 1.4;

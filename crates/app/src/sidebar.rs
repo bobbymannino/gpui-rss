@@ -34,8 +34,13 @@ impl Render for Sidebar {
         SidebarElement::new("sidebar")
             .side(Side::Left)
             .collapsed(self.collapsed)
+            .child(SidebarGroup::new("Feeds").child(SidebarMenu::new().child(SidebarMenuItem::new("All").active(true))))
             .child(
-                SidebarGroup::new("Library").child(SidebarMenu::new().child(SidebarMenuItem::new("All").active(true))),
+                SidebarGroup::new("Sources").child(
+                    SidebarMenu::new()
+                        .child(SidebarMenuItem::new("All"))
+                        .child(SidebarMenuItem::new("New")),
+                ),
             )
     }
 }
