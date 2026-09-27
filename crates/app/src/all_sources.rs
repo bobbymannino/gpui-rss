@@ -52,10 +52,10 @@ impl AllSources {
         .detach_and_log_err(cx);
     }
 
-    /// Remove `source` and save. The prompt is async, so the source is found by value rather than by its old index.
+    /// Remove `source` and save. The prompt is async, so the source is found by its URL rather than by its old index.
     fn delete(&self, source: &Source, cx: &mut Context<Self>) -> anyhow::Result<()> {
         self.storage.update(cx, |db, cx| {
-            let Some(index) = db.sources().iter().position(|s| s == source) else {
+            let Some(index) = db.sources().iter().position(|s| s.url() == source.url()) else {
                 return Ok(());
             };
 

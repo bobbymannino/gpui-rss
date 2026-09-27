@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use feed_rs::model::Entry;
+use serde::{Deserialize, Serialize};
 
 /// A single item published by a feed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Post {
     /// Unique identifier of the post within its feed.
     id: String,
@@ -61,6 +62,11 @@ impl Post {
     #[must_use]
     pub const fn read_at(&self) -> Option<DateTime<Utc>> {
         self.read_at
+    }
+
+    /// Sets when the post was read, or `None` to mark it unread.
+    pub const fn set_read_at(&mut self, read_at: Option<DateTime<Utc>>) {
+        self.read_at = read_at;
     }
 }
 
