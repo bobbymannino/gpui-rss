@@ -16,6 +16,8 @@ pub struct Post {
     author: Option<String>,
     /// When the post was published, falling back to when it was last updated.
     published_at: Option<DateTime<Utc>>,
+    /// If the post has been read, when was it read
+    read_at: Option<DateTime<Utc>>,
 }
 
 impl Post {
@@ -54,6 +56,12 @@ impl Post {
     pub const fn published_at(&self) -> Option<DateTime<Utc>> {
         self.published_at
     }
+
+    /// If the post has been read, when was it read
+    #[must_use]
+    pub const fn read_at(&self) -> Option<DateTime<Utc>> {
+        self.read_at
+    }
 }
 
 impl From<Entry> for Post {
@@ -65,6 +73,7 @@ impl From<Entry> for Post {
             author: entry.authors.into_iter().next().map(|author| author.name),
             published_at: entry.published.or(entry.updated),
             id: entry.id,
+            read_at: None,
         }
     }
 }
