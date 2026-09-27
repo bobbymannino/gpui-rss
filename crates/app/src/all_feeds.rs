@@ -5,6 +5,8 @@ use gpui_kit::Task;
 use gpui_kit::Window;
 use gpui_kit::base::StyledExt as _;
 use gpui_kit::component::ActiveTheme as _;
+use gpui_kit::component::Icon;
+use gpui_kit::component::IconName;
 use gpui_kit::component::spinner::Spinner;
 use gpui_kit::div;
 use gpui_kit::prelude::*;
@@ -120,20 +122,30 @@ impl AllFeeds {
 
         let row = div()
             .id(("post", index))
-            .v_flex()
+            .h_flex()
             .gap_1()
+            .justify_between()
             .py_3()
             .border_b_1()
             .border_color(cx.theme().border)
-            .child(div().font_medium().child(title.to_owned()))
-            .child(div().text_sm().text_color(cx.theme().muted_foreground).child(meta));
+            .child(
+                div()
+                    .v_flex()
+                    .gap_1()
+                    .child(div().font_medium().child(title.to_owned()))
+                    .child(div().text_sm().text_color(cx.theme().muted_foreground).child(meta)),
+            )
+            .when(post.read_at().is_some(), |div| div.child(IconName::Eye));
 
         match post.link() {
             Some(link) => {
                 let link = link.to_owned();
                 row.cursor_pointer()
                     .hover(|style| style.bg(cx.theme().accent))
-                    .on_click(move |_, _, cx| cx.open_url(&link))
+                    .on_click(move |_, _, cx| {
+                        // cx.mark_post_as_read(&post);
+                        cx.open_url(&link);
+                    })
             }
             None => row,
         }
