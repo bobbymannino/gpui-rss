@@ -62,6 +62,11 @@ impl Source {
         &self.posts
     }
 
+    /// The post with `id`, if this source has one.
+    pub fn post_mut(&mut self, id: &str) -> Option<&mut Post> {
+        self.posts.iter_mut().find(|post| post.id() == id)
+    }
+
     /// Replaces the posts with a freshly `fetched` set, keeping when each already known post was read.
     pub fn set_posts(&mut self, mut fetched: Vec<Post>) {
         for post in &mut fetched {

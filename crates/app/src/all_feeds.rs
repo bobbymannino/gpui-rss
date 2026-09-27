@@ -1,3 +1,4 @@
+use chrono::Utc;
 use feed::Post;
 use gpui_kit::Entity;
 use gpui_kit::SharedString;
@@ -5,7 +6,6 @@ use gpui_kit::Task;
 use gpui_kit::Window;
 use gpui_kit::base::StyledExt as _;
 use gpui_kit::component::ActiveTheme as _;
-use gpui_kit::component::Icon;
 use gpui_kit::component::IconName;
 use gpui_kit::component::spinner::Spinner;
 use gpui_kit::div;
@@ -27,6 +27,8 @@ pub struct AllFeeds {
     state: State,
     /// URLs of the sources the latest fetch covered, to tell a changed source list apart from saved posts.
     fetched_urls: Vec<String>,
+    /// Why the last attempt to save a post as read failed, if it did.
+    read_error: Option<SharedString>,
     /// The in flight fetch. Replacing it cancels the previous one.
     fetch: Task<()>,
 }
@@ -46,6 +48,7 @@ impl AllFeeds {
             storage,
             state: State::Loading,
             fetched_urls: Vec::new(),
+            read_error: None,
             fetch: Task::ready(()),
         };
         this.reload(cx);
@@ -108,11 +111,43 @@ impl AllFeeds {
         cx.notify();
     }
 
-    /// One post as a row: its title with the source and date beneath. Clicking it opens the post in the browser.
-    fn post_row(index: usize, source: &str, post: &Post, cx: &Context<Self>) -> impl IntoElement {
+    /// Mark the post with `post_id` from the source at `source_url` as read now and save, unless it was already read.
+    fn mark_read(&mut self, source_url: &str, post_id: &str, cx: &mut Context<Self>) {
+        let result = self.storage.update(cx, |db, cx| {
+            let Some(post) = find_post(db, source_url, post_id).filter(|post| post.read_at().is_none()) else {
+                return Ok(());
+            };
+            post.set_read_at(Some(Utc::now()));
+
+            if let Err(err) = db.write() {
+                if let Some(post) = find_post(db, source_url, post_id) {
+                    post.set_read_at(None);
+                }
+                return Err(err);
+            }
+
+            cx.notify();
+            Ok(())
+        });
+
+        self.read_error = result
+            .err()
+            .map(|err| SharedString::from(format!("Could not mark the post as read: {err:#}")));
+        cx.notify();
+    }
+
+    /// One post as a row: its title with the source and date beneath. Clicking it marks it read and opens it in the
+    /// browser.
+    fn post_row(
+        index: usize,
+        source_name: &str,
+        source_url: &str,
+        post: &Post,
+        cx: &Context<Self>,
+    ) -> impl IntoElement {
         let meta = post.published_at().map_or_else(
-            || source.to_owned(),
-            |published_at| format!("{source} · {}", published_at.format("%-d %b %Y")),
+            || source_name.to_owned(),
+            |published_at| format!("{source_name} · {}", published_at.format("%-d %b %Y")),
         );
         let title = if post.title().is_empty() {
             "Untitled"
@@ -120,7 +155,11 @@ impl AllFeeds {
             post.title()
         };
 
-        let row = div()
+        let source_url = source_url.to_owned();
+        let post_id = post.id().to_owned();
+        let link = post.link().map(str::to_owned);
+
+        div()
             .id(("post", index))
             .h_flex()
             .gap_1()
@@ -128,27 +167,20 @@ impl AllFeeds {
             .py_3()
             .border_b_1()
             .border_color(cx.theme().border)
+            .cursor_pointer()
+            .hover(|style| style.bg(cx.theme().accent))
+            .on_click(cx.listener(move |this, _, _, cx| {
+                this.mark_read(&source_url, &post_id, cx);
+                if let Some(link) = &link {
+                    cx.open_url(link);
+                }
+            }))
             .child(
                 div()
-                    .v_flex()
-                    .gap_1()
                     .child(div().font_medium().child(title.to_owned()))
                     .child(div().text_sm().text_color(cx.theme().muted_foreground).child(meta)),
             )
-            .when(post.read_at().is_some(), |div| div.child(IconName::Eye));
-
-        match post.link() {
-            Some(link) => {
-                let link = link.to_owned();
-                row.cursor_pointer()
-                    .hover(|style| style.bg(cx.theme().accent))
-                    .on_click(move |_, _, cx| {
-                        // cx.mark_post_as_read(&post);
-                        cx.open_url(&link);
-                    })
-            }
-            None => row,
-        }
+            .when(post.read_at().is_some(), |div| div.child(IconName::Eye))
     }
 }
 
@@ -160,7 +192,7 @@ impl Render for AllFeeds {
         let mut posts: Vec<_> = db
             .sources()
             .iter()
-            .flat_map(|source| source.posts().iter().map(move |post| (source.name(), post)))
+            .flat_map(|source| source.posts().iter().map(move |post| (source, post)))
             .collect();
         // Newest first. Posts without a date sort last, since `None` is less than any `Some`.
         posts.sort_by_key(|(_, post)| std::cmp::Reverse(post.published_at()));
@@ -195,6 +227,7 @@ impl Render for AllFeeds {
             .children(
                 errors
                     .iter()
+                    .chain(&self.read_error)
                     .map(|error| div().text_sm().text_color(cx.theme().danger).child(error.clone())),
             )
             .children(empty)
@@ -202,7 +235,7 @@ impl Render for AllFeeds {
                 posts
                     .into_iter()
                     .enumerate()
-                    .map(|(index, (source, post))| Self::post_row(index, source, post, cx)),
+                    .map(|(index, (source, post))| Self::post_row(index, source.name(), source.url(), post, cx)),
             );
 
         div()
@@ -216,6 +249,14 @@ impl Render for AllFeeds {
             .child(div().text_xl().font_semibold().child("Feeds"))
             .child(body)
     }
+}
+
+/// The post with `post_id` from the source at `source_url`, if both still exist.
+fn find_post<'a>(db: &'a mut JSONDatabase, source_url: &str, post_id: &str) -> Option<&'a mut Post> {
+    db.sources_mut()
+        .iter_mut()
+        .find(|source| source.url() == source_url)
+        .and_then(|source| source.post_mut(post_id))
 }
 
 /// URLs of every source in `db`, in order.
