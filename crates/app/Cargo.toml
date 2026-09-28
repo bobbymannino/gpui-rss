@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-gpui-kit = "0.6"
+gpui-kit = "0.7"
 anyhow = "1.0"
 chrono = "0.4"
 dirs = "7"

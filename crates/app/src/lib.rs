@@ -14,7 +14,6 @@ use gpui_kit::QuitMode;
 use gpui_kit::Size;
 use gpui_kit::WindowBounds;
 use gpui_kit::WindowOptions;
-use gpui_kit::component::Root;
 use gpui_kit::prelude::*;
 use gpui_kit::px;
 use gpui_kit::size;
@@ -84,11 +83,12 @@ pub fn run() {
         let open = cx.spawn(async move |cx| {
             let database = JSONDatabase::new(database_path()?)?;
 
-            cx.open_window(options, |window, cx| {
-                window.activate_window();
-                let storage = cx.new(|_| database);
-                let view = cx.new(|cx| Workspace::new(storage, window, cx));
-                cx.new(|cx| Root::new(view, window, cx))
+            cx.update(|cx| {
+                gpui_kit::open_window(options, cx, |window, cx| {
+                    window.activate_window();
+                    let storage = cx.new(|_| database);
+                    cx.new(|cx| Workspace::new(storage, window, cx))
+                })
             })?;
 
             anyhow::Ok(())
